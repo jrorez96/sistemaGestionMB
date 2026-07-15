@@ -1,0 +1,24 @@
+.modulo-container {
+  flex: 1;
+  padding: 20px;
+}
+.topmenu {
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.tab-btn {
+  padding: 10px 16px;
+  text-decoration: none;
+  color: #475569;
+  border-bottom: 3px solid transparent;
+}
+.tab-btn.activo {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  font-weight: 600;
+}

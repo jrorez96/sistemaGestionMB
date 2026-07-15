@@ -1,0 +1,42 @@
+* { box-sizing: border-box; font-family: system-ui, sans-serif; }
+body { margin: 0; }
+.app-layout { display: flex; }
+
+.crud-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+.crud-table th, .crud-table td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+.crud-table th { background: #f8fafc; }
+
+.btn-editar, .btn-eliminar, .btn-primario {
+  padding: 6px 12px; margin-right: 6px; border: none; border-radius: 4px; cursor: pointer;
+}
+.btn-editar { background: #3b82f6; color: white; }
+.btn-eliminar { background: #ef4444; color: white; }
+.btn-primario { background: #16a34a; color: white; margin-bottom: 10px; }
+
+.form-panel { background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+.form-panel input, .form-panel select {
+  display: block; width: 100%; margin: 6px 0 12px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;
+}
+.form-panel label { font-size: 13px; font-weight: 600; color: #334155; }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.pagination button {
+  padding: 6px 12px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pagination span {
+  font-size: 14px;
+  color: #475569;
+}

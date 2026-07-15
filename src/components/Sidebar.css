@@ -1,0 +1,32 @@
+.sidebar {
+  width: 240px;
+  background: #1e293b;
+  color: white;
+  min-height: 100vh;
+  padding: 20px 0;
+}
+.sidebar-title {
+  padding: 0 20px 20px;
+  font-size: 18px;
+}
+.sidebar-btn {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  color: #cbd5e1;
+  text-decoration: none;
+  border-left: 4px solid transparent;
+}
+.sidebar-btn:hover {
+  background: #334155;
+}
+.sidebar-btn.activo {
+  background: #334155;
+  border-left-color: #3b82f6;
+  color: white;
+}
+.sidebar-logo {
+  max-width: 100%;
+  height: 60px;
+  object-fit: contain;
+}
