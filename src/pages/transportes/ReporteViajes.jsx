@@ -25,15 +25,16 @@ export default function ReporteViajes() {
 
       {reporte && (
         <>
-          <div className="form-panel">Total en viajes: <strong>₡{reporte.totalViajes}</strong></div>
+          <div className="form-panel">Total en viajes (con IVA): <strong>₡{reporte.totalViajes}</strong></div>
           <table className="crud-table">
-            <thead><tr><th>Fecha</th><th>Destino</th><th>Precio</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Destino</th><th>Precio</th><th>Total</th></tr></thead>
             <tbody>
               {reporte.viajes.map((v) => (
                 <tr key={v.ViajeId}>
                   <td>{v.Fecha?.substring(0, 10)}</td>
                   <td>{v.Destino}</td>
                   <td>₡{v.Precio}</td>
+                  <td>₡{v.Total}</td>
                 </tr>
               ))}
             </tbody>
