@@ -30,6 +30,13 @@ export default function Ventas() {
   const [historialVentaId, setHistorialVentaId] = useState(null);
   const [historial, setHistorial] = useState([]);
 
+  // Panel de edición
+  const [ventaEditar, setVentaEditar] = useState(null);
+  const [editCantidad, setEditCantidad] = useState('');
+  const [editPrecio, setEditPrecio] = useState('');
+  const [editIva, setEditIva] = useState('');
+  const [editFecha, setEditFecha] = useState('');
+
   const cargarVentas = async (buscar = busqueda, paginaSolicitada = pagina) => {
     const res = await api.get('/ventas', {
       params: { buscar, pagina: paginaSolicitada, limite: LIMITE },
@@ -59,7 +66,6 @@ export default function Ventas() {
   const total = subtotal + (subtotal * porcentajeIva) / 100;
   const saldoPendiente = total - Number(montoPagado || 0);
 
-  // Vista previa de la fecha de pago (2 meses después) — el valor real lo calcula SQL Server
   const fechaPagoPreview = (() => {
     if (!fechaVenta) return '';
     const f = new Date(fechaVenta);
@@ -111,6 +117,34 @@ export default function Ventas() {
     const res = await api.get(`/ventas/${venta.VentaId}/abonos`);
     setHistorial(res.data);
     setHistorialVentaId(venta.VentaId);
+  };
+
+  const abrirPanelEditar = (venta) => {
+    setVentaEditar(venta);
+    setEditCantidad(venta.Cantidad);
+    setEditPrecio(venta.PrecioVentaUnitario);
+    setEditIva(venta.PorcentajeIva);
+    setEditFecha(venta.FechaVenta?.substring(0, 10));
+  };
+
+  const editSubtotal = Number(editCantidad || 0) * Number(editPrecio || 0);
+  const editTotal = editSubtotal + (editSubtotal * Number(editIva || 0)) / 100;
+
+  const confirmarEdicion = async () => {
+    if (!editCantidad || !editPrecio) return alert('Cantidad y precio son obligatorios');
+    try {
+      await api.put(`/ventas/${ventaEditar.VentaId}`, {
+        cantidad: Number(editCantidad),
+        precioVentaUnitario: Number(editPrecio),
+        porcentajeIva: Number(editIva),
+        fechaVenta: editFecha,
+      });
+      setVentaEditar(null);
+      cargarVentas();
+      cargarListas(); // el stock puede haber cambiado
+    } catch (err) {
+      alert(err.response?.data?.error || 'Error al editar la venta');
+    }
   };
 
   return (
@@ -179,6 +213,7 @@ export default function Ventas() {
               <td>₡{v.SaldoPendiente}</td>
               <td>{v.Estado}</td>
               <td>
+                <button className="btn-editar" onClick={() => abrirPanelEditar(v)}>Editar</button>
                 {v.Estado === 'Pendiente' && (
                   <button className="btn-editar" onClick={() => abrirPanelAbono(v)}>Abonar</button>
                 )}
@@ -190,6 +225,36 @@ export default function Ventas() {
       </table>
 
       <Pagination pagina={pagina} totalPaginas={totalPaginas} onCambiar={setPagina} />
+
+      {/* Panel de edición de venta */}
+      {ventaEditar && (
+        <div className="form-panel" style={{ marginTop: 15 }}>
+          <h3>Editar venta — {ventaEditar.ClienteNombre} ({ventaEditar.Marca} {ventaEditar.Medida})</h3>
+
+          <label>Fecha de venta</label>
+          <input type="date" value={editFecha} onChange={(e) => setEditFecha(e.target.value)} />
+
+          <label>Cantidad</label>
+          <input type="number" min="1" value={editCantidad} onChange={(e) => setEditCantidad(e.target.value)} />
+
+          <label>Precio de venta unitario</label>
+          <input type="number" step="0.01" value={editPrecio} onChange={(e) => setEditPrecio(e.target.value)} />
+
+          <label>IVA (%)</label>
+          <input type="number" step="0.01" value={editIva} onChange={(e) => setEditIva(e.target.value)} />
+
+          <div style={{ background: '#e2e8f0', padding: 10, borderRadius: 6, marginBottom: 10 }}>
+            <p>Subtotal: ₡{editSubtotal.toFixed(2)}</p>
+            <p><strong>Total: ₡{editTotal.toFixed(2)}</strong></p>
+            <p style={{ fontSize: 12, color: '#64748b' }}>
+              El monto pagado y el saldo pendiente se recalculan solos con este nuevo total.
+            </p>
+          </div>
+
+          <button className="btn-primario" onClick={confirmarEdicion}>Guardar Cambios</button>
+          <button type="button" onClick={() => setVentaEditar(null)}>Cancelar</button>
+        </div>
+      )}
 
       {/* Panel de abono */}
       {ventaAbono && (
