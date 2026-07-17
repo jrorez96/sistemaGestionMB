@@ -30,8 +30,8 @@ export default function RegistroFacturas() {
     cargar(texto, 1);
   };
 
-  const totalCalculado =
-    Number(form.monto || 0) + (Number(form.monto || 0) * Number(form.porcentajeIva || 0)) / 100;
+  const montoIvaCalculado = (Number(form.monto || 0) * Number(form.porcentajeIva || 0)) / 100;
+  const totalCalculado = Number(form.monto || 0) + montoIvaCalculado;
   const saldoCalculado = totalCalculado - Number(form.montoPagado || 0);
 
   const guardar = async (e) => {
@@ -109,6 +109,7 @@ export default function RegistroFacturas() {
         )}
 
         <div style={{ background: '#e2e8f0', padding: 10, borderRadius: 6, marginBottom: 10 }}>
+          <p>Monto del IVA: ₡{montoIvaCalculado.toFixed(2)}</p>
           <p><strong>Total: ₡{totalCalculado.toFixed(2)}</strong></p>
           {!editandoId && <p>Saldo pendiente: ₡{saldoCalculado.toFixed(2)}</p>}
         </div>
@@ -122,7 +123,8 @@ export default function RegistroFacturas() {
       <table className="crud-table">
         <thead>
           <tr>
-            <th>Nombre</th><th>Fecha</th><th>Monto</th><th>% IVA</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th>Acciones</th>
+            <th>Nombre</th><th>Fecha</th><th>Monto</th><th>% IVA</th><th>Monto IVA</th>
+            <th>Total</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -132,6 +134,7 @@ export default function RegistroFacturas() {
               <td>{f.Fecha?.substring(0, 10)}</td>
               <td>₡{f.Monto}</td>
               <td>{f.PorcentajeIva}%</td>
+              <td>₡{f.MontoIva}</td>
               <td>₡{f.Total}</td>
               <td>₡{f.MontoPagado}</td>
               <td>₡{f.SaldoPendiente}</td>
