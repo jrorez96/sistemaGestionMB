@@ -16,26 +16,25 @@ export default function Ventas() {
 
   const [clienteId, setClienteId] = useState('');
   const [llantaId, setLlantaId] = useState('');
+  const [tipoVenta, setTipoVenta] = useState('Contado');
   const [cantidad, setCantidad] = useState(1);
   const [porcentajeIva, setPorcentajeIva] = useState(13);
   const [montoPagado, setMontoPagado] = useState(0);
   const [fechaVenta, setFechaVenta] = useState(hoy());
 
-  // Panel de abono
   const [ventaAbono, setVentaAbono] = useState(null);
   const [montoAbono, setMontoAbono] = useState('');
   const [fechaAbono, setFechaAbono] = useState(hoy());
 
-  // Panel de historial
   const [historialVentaId, setHistorialVentaId] = useState(null);
   const [historial, setHistorial] = useState([]);
 
-  // Panel de edición
   const [ventaEditar, setVentaEditar] = useState(null);
   const [editCantidad, setEditCantidad] = useState('');
   const [editPrecio, setEditPrecio] = useState('');
   const [editIva, setEditIva] = useState('');
   const [editFecha, setEditFecha] = useState('');
+  const [editTipoVenta, setEditTipoVenta] = useState('Contado');
 
   const cargarVentas = async (buscar = busqueda, paginaSolicitada = pagina) => {
     const res = await api.get('/ventas', {
@@ -61,7 +60,9 @@ export default function Ventas() {
   };
 
   const llantaSeleccionada = llantas.find((l) => l.LlantaId === Number(llantaId));
-  const precioUnitario = llantaSeleccionada?.PrecioVenta || 0;
+  const precioUnitario = llantaSeleccionada
+    ? (tipoVenta === 'Credito' ? llantaSeleccionada.PrecioVentaCredito : llantaSeleccionada.PrecioVentaContado)
+    : 0;
   const subtotal = cantidad * precioUnitario;
   const total = subtotal + (subtotal * porcentajeIva) / 100;
   const saldoPendiente = total - Number(montoPagado || 0);
@@ -83,9 +84,10 @@ export default function Ventas() {
         porcentajeIva: Number(porcentajeIva),
         montoPagado: Number(montoPagado),
         fechaVenta,
+        tipoVenta,
       });
       setClienteId(''); setLlantaId(''); setCantidad(1); setPorcentajeIva(13);
-      setMontoPagado(0); setFechaVenta(hoy());
+      setMontoPagado(0); setFechaVenta(hoy()); setTipoVenta('Contado');
       cargarVentas();
       cargarListas();
     } catch (err) {
@@ -125,6 +127,7 @@ export default function Ventas() {
     setEditPrecio(venta.PrecioVentaUnitario);
     setEditIva(venta.PorcentajeIva);
     setEditFecha(venta.FechaVenta?.substring(0, 10));
+    setEditTipoVenta(venta.TipoVenta || 'Contado');
   };
 
   const editSubtotal = Number(editCantidad || 0) * Number(editPrecio || 0);
@@ -138,10 +141,11 @@ export default function Ventas() {
         precioVentaUnitario: Number(editPrecio),
         porcentajeIva: Number(editIva),
         fechaVenta: editFecha,
+        tipoVenta: editTipoVenta,
       });
       setVentaEditar(null);
       cargarVentas();
-      cargarListas(); // el stock puede haber cambiado
+      cargarListas();
     } catch (err) {
       alert(err.response?.data?.error || 'Error al editar la venta');
     }
@@ -164,9 +168,15 @@ export default function Ventas() {
           <option value="">-- Seleccione --</option>
           {llantas.map((l) => (
             <option key={l.LlantaId} value={l.LlantaId}>
-              {l.Marca} {l.Medida} (Stock: {l.Cantidad}) — ₡{l.PrecioVenta}
+              {l.Marca} {l.Medida} (Stock: {l.Cantidad}) — Contado: ₡{l.PrecioVentaContado} / Crédito: ₡{l.PrecioVentaCredito}
             </option>
           ))}
+        </select>
+
+        <label>Tipo de Venta</label>
+        <select value={tipoVenta} onChange={(e) => setTipoVenta(e.target.value)}>
+          <option value="Contado">Contado</option>
+          <option value="Credito">Crédito</option>
         </select>
 
         <label>Fecha de venta</label>
@@ -182,6 +192,7 @@ export default function Ventas() {
         <input type="number" step="0.01" value={montoPagado} onChange={(e) => setMontoPagado(e.target.value)} />
 
         <div style={{ background: '#e2e8f0', padding: 10, borderRadius: 6, marginBottom: 10 }}>
+          <p>Precio unitario usado ({tipoVenta}): ₡{precioUnitario}</p>
           <p>Subtotal: ₡{subtotal.toFixed(2)}</p>
           <p><strong>Total: ₡{total.toFixed(2)}</strong></p>
           <p>Saldo pendiente: ₡{saldoPendiente.toFixed(2)}</p>
@@ -196,7 +207,7 @@ export default function Ventas() {
       <table className="crud-table">
         <thead>
           <tr>
-            <th>Cliente</th><th>Llanta</th><th>Cant.</th><th>F. Venta</th><th>F. Pago</th>
+            <th>Cliente</th><th>Llanta</th><th>Tipo</th><th>Cant.</th><th>F. Venta</th><th>F. Pago</th>
             <th>Total</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th>Acciones</th>
           </tr>
         </thead>
@@ -205,6 +216,7 @@ export default function Ventas() {
             <tr key={v.VentaId}>
               <td>{v.ClienteNombre}</td>
               <td>{v.Marca} {v.Medida}</td>
+              <td>{v.TipoVenta}</td>
               <td>{v.Cantidad}</td>
               <td>{v.FechaVenta?.substring(0, 10)}</td>
               <td>{v.FechaPago?.substring(0, 10)}</td>
@@ -226,10 +238,15 @@ export default function Ventas() {
 
       <Pagination pagina={pagina} totalPaginas={totalPaginas} onCambiar={setPagina} />
 
-      {/* Panel de edición de venta */}
       {ventaEditar && (
         <div className="form-panel" style={{ marginTop: 15 }}>
           <h3>Editar venta — {ventaEditar.ClienteNombre} ({ventaEditar.Marca} {ventaEditar.Medida})</h3>
+
+          <label>Tipo de Venta</label>
+          <select value={editTipoVenta} onChange={(e) => setEditTipoVenta(e.target.value)}>
+            <option value="Contado">Contado</option>
+            <option value="Credito">Crédito</option>
+          </select>
 
           <label>Fecha de venta</label>
           <input type="date" value={editFecha} onChange={(e) => setEditFecha(e.target.value)} />
@@ -246,9 +263,6 @@ export default function Ventas() {
           <div style={{ background: '#e2e8f0', padding: 10, borderRadius: 6, marginBottom: 10 }}>
             <p>Subtotal: ₡{editSubtotal.toFixed(2)}</p>
             <p><strong>Total: ₡{editTotal.toFixed(2)}</strong></p>
-            <p style={{ fontSize: 12, color: '#64748b' }}>
-              El monto pagado y el saldo pendiente se recalculan solos con este nuevo total.
-            </p>
           </div>
 
           <button className="btn-primario" onClick={confirmarEdicion}>Guardar Cambios</button>
@@ -256,7 +270,6 @@ export default function Ventas() {
         </div>
       )}
 
-      {/* Panel de abono */}
       {ventaAbono && (
         <div className="form-panel" style={{ marginTop: 15 }}>
           <h3>Registrar abono — {ventaAbono.ClienteNombre}</h3>
@@ -270,7 +283,6 @@ export default function Ventas() {
         </div>
       )}
 
-      {/* Panel de historial de abonos */}
       {historialVentaId && (
         <div className="form-panel" style={{ marginTop: 15 }}>
           <h3>Historial de abonos</h3>

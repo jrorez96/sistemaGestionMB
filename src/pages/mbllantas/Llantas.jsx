@@ -4,7 +4,10 @@ import CrudTable from '../../components/CrudTable';
 import SearchBar from '../../components/SearchBar';
 import Pagination from '../../components/Pagination';
 
-const vacio = { marca: '', perfil: '', taco: '', medida: '', cantidad: '', precioCompra: '', precioVenta: '' };
+const vacio = {
+  marca: '', perfil: '', taco: '', medida: '', cantidad: '',
+  precioCompra: '', precioVentaContado: '', precioVentaCredito: '',
+};
 const LIMITE = 10;
 
 export default function Llantas() {
@@ -37,7 +40,8 @@ export default function Llantas() {
       ...form,
       cantidad: Number(form.cantidad),
       precioCompra: Number(form.precioCompra),
-      precioVenta: Number(form.precioVenta),
+      precioVentaContado: Number(form.precioVentaContado),
+      precioVentaCredito: Number(form.precioVentaCredito),
     };
     if (editandoId) {
       await api.put(`/llantas/${editandoId}`, payload);
@@ -57,7 +61,8 @@ export default function Llantas() {
       medida: llanta.Medida,
       cantidad: llanta.Cantidad,
       precioCompra: llanta.PrecioCompra,
-      precioVenta: llanta.PrecioVenta,
+      precioVentaContado: llanta.PrecioVentaContado,
+      precioVentaCredito: llanta.PrecioVentaCredito,
     });
     setEditandoId(llanta.LlantaId);
   };
@@ -88,8 +93,10 @@ export default function Llantas() {
         <input type="number" required value={form.cantidad} onChange={(e) => setForm({ ...form, cantidad: e.target.value })} />
         <label>Precio Compra</label>
         <input type="number" step="0.01" required value={form.precioCompra} onChange={(e) => setForm({ ...form, precioCompra: e.target.value })} />
-        <label>Precio Venta</label>
-        <input type="number" step="0.01" required value={form.precioVenta} onChange={(e) => setForm({ ...form, precioVenta: e.target.value })} />
+        <label>Precio Venta de Contado</label>
+        <input type="number" step="0.01" required value={form.precioVentaContado} onChange={(e) => setForm({ ...form, precioVentaContado: e.target.value })} />
+        <label>Precio Venta a Crédito</label>
+        <input type="number" step="0.01" required value={form.precioVentaCredito} onChange={(e) => setForm({ ...form, precioVentaCredito: e.target.value })} />
         <button className="btn-primario" type="submit">{editandoId ? 'Actualizar' : 'Agregar'} Llanta</button>
         {editandoId && (
           <button type="button" onClick={() => { setForm(vacio); setEditandoId(null); }}>Cancelar</button>
@@ -106,7 +113,8 @@ export default function Llantas() {
           { key: 'Medida', label: 'Medida' },
           { key: 'Cantidad', label: 'Stock' },
           { key: 'PrecioCompra', label: 'P. Compra' },
-          { key: 'PrecioVenta', label: 'P. Venta' },
+          { key: 'PrecioVentaContado', label: 'P. Venta Contado' },
+          { key: 'PrecioVentaCredito', label: 'P. Venta Crédito' },
         ]}
         datos={llantas}
         onEditar={editar}
