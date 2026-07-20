@@ -5,6 +5,7 @@ import Pagination from '../../components/Pagination';
 
 const vacio = { nombre: '', fecha: '', monto: '', porcentajeIva: 13, montoPagado: 0 };
 const LIMITE = 10;
+const hoy = () => new Date().toISOString().substring(0, 10);
 
 export default function RegistroFacturas() {
   const [facturas, setFacturas] = useState([]);
@@ -13,6 +14,16 @@ export default function RegistroFacturas() {
   const [busqueda, setBusqueda] = useState('');
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalMontoGeneral, setTotalMontoGeneral] = useState(0);
+
+  // Panel de abono
+  const [facturaAbono, setFacturaAbono] = useState(null);
+  const [montoAbono, setMontoAbono] = useState('');
+  const [fechaAbono, setFechaAbono] = useState(hoy());
+
+  // Panel de historial
+  const [historialFacturaId, setHistorialFacturaId] = useState(null);
+  const [historial, setHistorial] = useState([]);
 
   const cargar = async (buscar = busqueda, paginaSolicitada = pagina) => {
     const res = await api.get('/facturas', {
@@ -20,6 +31,7 @@ export default function RegistroFacturas() {
     });
     setFacturas(res.data.datos);
     setTotalPaginas(res.data.totalPaginas);
+    setTotalMontoGeneral(res.data.totalMontoGeneral);
   };
 
   useEffect(() => { cargar(busqueda, pagina); }, [pagina]);
@@ -31,8 +43,7 @@ export default function RegistroFacturas() {
   };
 
   const montoIvaCalculado = (Number(form.monto || 0) * Number(form.porcentajeIva || 0)) / 100;
-  const totalCalculado = Number(form.monto || 0) + montoIvaCalculado;
-  const saldoCalculado = totalCalculado - Number(form.montoPagado || 0);
+  const saldoIvaCalculado = montoIvaCalculado - Number(form.montoPagado || 0);
 
   const guardar = async (e) => {
     e.preventDefault();
@@ -74,15 +85,30 @@ export default function RegistroFacturas() {
     cargar();
   };
 
-  const registrarAbono = async (factura) => {
-    const monto = prompt(`Saldo pendiente actual: ₡${factura.SaldoPendiente}\n¿Cuánto abona?`);
-    if (!monto) return;
+  const abrirPanelAbono = (factura) => {
+    setFacturaAbono(factura);
+    setMontoAbono('');
+    setFechaAbono(hoy());
+  };
+
+  const confirmarAbono = async () => {
+    if (!montoAbono || Number(montoAbono) <= 0) return alert('Ingresa un monto válido');
     try {
-      await api.put(`/facturas/${factura.FacturaId}/abono`, { monto: Number(monto) });
+      await api.put(`/facturas/${facturaAbono.FacturaId}/abono`, {
+        monto: Number(montoAbono),
+        fechaAbono,
+      });
+      setFacturaAbono(null);
       cargar();
     } catch (err) {
       alert(err.response?.data?.error || 'Error al registrar el abono');
     }
+  };
+
+  const verHistorial = async (factura) => {
+    const res = await api.get(`/facturas/${factura.FacturaId}/abonos`);
+    setHistorial(res.data);
+    setHistorialFacturaId(factura.FacturaId);
   };
 
   return (
@@ -103,15 +129,14 @@ export default function RegistroFacturas() {
 
         {!editandoId && (
           <>
-            <label>Pago parcial (opcional)</label>
+            <label>Pago parcial del IVA (opcional)</label>
             <input type="number" step="0.01" value={form.montoPagado} onChange={(e) => setForm({ ...form, montoPagado: e.target.value })} />
           </>
         )}
 
         <div style={{ background: '#e2e8f0', padding: 10, borderRadius: 6, marginBottom: 10 }}>
-          <p>Monto del IVA: ₡{montoIvaCalculado.toFixed(2)}</p>
-          <p><strong>Total: ₡{totalCalculado.toFixed(2)}</strong></p>
-          {!editandoId && <p>Saldo pendiente: ₡{saldoCalculado.toFixed(2)}</p>}
+          <p><strong>Monto del IVA: ₡{montoIvaCalculado.toFixed(2)}</strong></p>
+          {!editandoId && <p>Saldo pendiente del IVA: ₡{saldoIvaCalculado.toFixed(2)}</p>}
         </div>
 
         <button className="btn-primario" type="submit">{editandoId ? 'Actualizar' : 'Agregar'} Factura</button>
@@ -124,7 +149,7 @@ export default function RegistroFacturas() {
         <thead>
           <tr>
             <th>Nombre</th><th>Fecha</th><th>Monto</th><th>% IVA</th><th>Monto IVA</th>
-            <th>Total</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th>Acciones</th>
+            <th>Pagado (IVA)</th><th>Saldo (IVA)</th><th>Estado</th><th>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -135,23 +160,67 @@ export default function RegistroFacturas() {
               <td>₡{f.Monto}</td>
               <td>{f.PorcentajeIva}%</td>
               <td>₡{f.MontoIva}</td>
-              <td>₡{f.Total}</td>
               <td>₡{f.MontoPagado}</td>
               <td>₡{f.SaldoPendiente}</td>
               <td>{f.Estado}</td>
               <td>
                 <button className="btn-editar" onClick={() => editar(f)}>Editar</button>
                 {f.Estado === 'Pendiente' && (
-                  <button className="btn-editar" onClick={() => registrarAbono(f)}>Abonar</button>
+                  <button className="btn-editar" onClick={() => abrirPanelAbono(f)}>Abonar</button>
                 )}
+                <button className="btn-editar" onClick={() => verHistorial(f)}>Historial</button>
                 <button className="btn-eliminar" onClick={() => eliminar(f)}>Eliminar</button>
               </td>
             </tr>
           ))}
         </tbody>
+        <tfoot>
+          <tr>
+            <td colSpan={2} style={{ fontWeight: 'bold' }}>Total general</td>
+            <td style={{ fontWeight: 'bold' }}>₡{totalMontoGeneral}</td>
+            <td colSpan={6}></td>
+          </tr>
+        </tfoot>
       </table>
 
       <Pagination pagina={pagina} totalPaginas={totalPaginas} onCambiar={setPagina} />
+
+      {/* Panel de abono */}
+      {facturaAbono && (
+        <div className="form-panel" style={{ marginTop: 15 }}>
+          <h3>Registrar abono — {facturaAbono.Nombre}</h3>
+          <p>Saldo pendiente del IVA: ₡{facturaAbono.SaldoPendiente}</p>
+          <label>Monto del abono</label>
+          <input type="number" step="0.01" value={montoAbono} onChange={(e) => setMontoAbono(e.target.value)} />
+          <label>Fecha del abono</label>
+          <input type="date" value={fechaAbono} onChange={(e) => setFechaAbono(e.target.value)} />
+          <button className="btn-primario" onClick={confirmarAbono}>Confirmar Abono</button>
+          <button type="button" onClick={() => setFacturaAbono(null)}>Cancelar</button>
+        </div>
+      )}
+
+      {/* Panel de historial de abonos */}
+      {historialFacturaId && (
+        <div className="form-panel" style={{ marginTop: 15 }}>
+          <h3>Historial de abonos</h3>
+          {historial.length === 0 ? (
+            <p>Aún no hay abonos registrados para esta factura.</p>
+          ) : (
+            <table className="crud-table">
+              <thead><tr><th>Fecha</th><th>Monto</th></tr></thead>
+              <tbody>
+                {historial.map((a) => (
+                  <tr key={a.AbonoId}>
+                    <td>{a.FechaAbono?.substring(0, 10)}</td>
+                    <td>₡{a.Monto}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <button type="button" onClick={() => setHistorialFacturaId(null)}>Cerrar</button>
+        </div>
+      )}
     </div>
   );
 }
